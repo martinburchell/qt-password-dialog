@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
+#include <QMainWindow>
 #include <QScreen>
 #include <QtSystemDetection>
 #include <QVBoxLayout>
@@ -65,7 +66,10 @@ public:
 
 int main(int argc, char* argv[]){
     QApplication app(argc, argv);
-    PasswordDialog dialog(nullptr);
+
+    auto main_window = new QMainWindow();
+    main_window->showMaximized();
+    PasswordDialog dialog(main_window);
     dialog.exec();
 
     return app.exec();
