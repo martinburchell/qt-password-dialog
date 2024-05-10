@@ -4,6 +4,7 @@
 #include <QDialogButtonBox>
 #include <QFont>
 #include <QFontMetrics>
+#include <QGuiApplication>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
@@ -25,9 +26,6 @@
 
 
 const int MINIMUM_PASSWORD_LENGTH = 10;
-
-#define DEBUG_MIN_SIZE_FOR_TITLE
-
 
 class PasswordDialog : public QDialog
 {
@@ -118,7 +116,7 @@ public:
         const QSize dialog_min_size = minimumSize();
         QSize size(dialog_min_size);
         size.setWidth(qMax(size.width(), final_w));
-#ifdef DEBUG_MIN_SIZE_FOR_TITLE
+        QRect screen_geometry = QGuiApplication::primaryScreen()->geometry();
         qDebug().nospace()
             << Q_FUNC_INFO
             << "window_title = " << window_title
@@ -126,15 +124,12 @@ public:
             << ", full_title = " << full_title
             << ", title_font = " << title_font
             << ", title_w = " << title_w
-            // << ", frame_size = " << frame_size
-            // << ", content_size = " << content_size
-            // << ", frame_extra = " << frame_extra
             << ", n_icons = " << n_icons
             << ", icon_w = " << icon_w
             << ", size_before = " << size_before
+            << ", screen_geometry = " << screen_geometry
             << ", dialog_min_size = " << dialog_min_size
             << ", size = " << size;
-#endif
         return size;
     }
 
