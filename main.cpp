@@ -2,10 +2,11 @@
 #include <QDebug>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QFont>
+#include <QFontMetrics>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
-#include <QMainWindow>
 #include <QScreen>
 #include <QtSystemDetection>
 #include <QVBoxLayout>
@@ -15,7 +16,17 @@
 #else
     const bool PLATFORM_FULL_SCREEN_DIALOGS = false;
 #endif
+
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+    const bool PLATFORM_TABLET = true;
+#else
+    const bool PLATFORM_TABLET = false;
+#endif
+
+
 const int MINIMUM_PASSWORD_LENGTH = 10;
+
+#define DEBUG_MIN_SIZE_FOR_TITLE
 
 
 class PasswordDialog : public QDialog
@@ -24,6 +35,8 @@ class PasswordDialog : public QDialog
 public:
     PasswordDialog(QWidget* parent) :  QDialog(parent)
     {
+        setWindowTitle("Enter a new password for the CamCOPS application");
+        setMinimumSize(minimumSizeForTitle());
         auto mainlayout = new QVBoxLayout();
         if (PLATFORM_FULL_SCREEN_DIALOGS) {
             setWindowState(Qt::WindowFullScreen);
@@ -62,14 +75,75 @@ public:
         }
         setLayout(mainlayout);
     }
+
+    QSize minimumSizeForTitle()
+    {
+        // +---------------------------------------------+
+        // | ICON  TITLETEXT - APPTITLE    WINDOWBUTTONS |
+        // |                                             |
+        // | contents                                    |
+        // +---------------------------------------------+
+
+        // https://doc.qt.io/qt-6.5/qwidget.html#windowTitle-prop
+        const QSize size_before = size();
+        const QString window_title = windowTitle();
+        const QString app_name = QApplication::applicationDisplayName();
+        QString full_title = window_title;
+        const QFont title_font = QApplication::font("QWorkspaceTitleBar");
+        const QFontMetrics fm(title_font);
+        const int title_w = fm.boundingRect(full_title).width();  // "_w" means width
+
+        // dialog->ensurePolished();
+        // const QSize frame_size = dialog->frameSize();
+        // const QSize content_size = dialog->size();
+        // ... problem was that both are QSize(640, 480) upon creation
+        // ... even if ensurePolished() is called first
+        // const QSize frame_extra = frame_size - content_size;
+
+        // How to count the number of icons shown on a window? ***
+        // - Android: 0
+        // - Linux: presumably may vary with window manager, but 4 is typical under
+        //   XFCE (1 icon on left, 3 [rollup/maximize/close] on right), but need a
+        //   bit more for spacing; 6 works better (at 24 pixels width per icon)
+        // - Windows: also 4 (icon left, minimize/maximize/close on right)
+        const int n_icons = PLATFORM_TABLET ? 0 : 6;
+
+        // How to read the size (esp. width) of a window icon? ***
+        // const int icon_w = frame_extra.height();
+        // ... on the basis that window icons are square!
+        // ... but the problem is that frame size may as yet be zero
+        const int icon_w = 24;
+
+        const int final_w = title_w + n_icons * icon_w;
+        const QSize dialog_min_size = minimumSize();
+        QSize size(dialog_min_size);
+        size.setWidth(qMax(size.width(), final_w));
+#ifdef DEBUG_MIN_SIZE_FOR_TITLE
+        qDebug().nospace()
+            << Q_FUNC_INFO
+            << "window_title = " << window_title
+            << ", app_name = " << app_name
+            << ", full_title = " << full_title
+            << ", title_font = " << title_font
+            << ", title_w = " << title_w
+            // << ", frame_size = " << frame_size
+            // << ", content_size = " << content_size
+            // << ", frame_extra = " << frame_extra
+            << ", n_icons = " << n_icons
+            << ", icon_w = " << icon_w
+            << ", size_before = " << size_before
+            << ", dialog_min_size = " << dialog_min_size
+            << ", size = " << size;
+#endif
+        return size;
+    }
+
 };
 
 int main(int argc, char* argv[]){
     QApplication app(argc, argv);
 
-    auto main_window = new QMainWindow();
-    main_window->showMaximized();
-    PasswordDialog dialog(main_window);
+    PasswordDialog dialog(nullptr);
     dialog.exec();
 
     return app.exec();
